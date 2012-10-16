@@ -76,7 +76,7 @@ if (scalar @ARGV < 1)
     #my $nicepath = trim (/localhost/, $$path_final);
     my $finalpath = Path::Abstract->new( $prefix . "/" . $path_final );
 
-    print "$finalpath\t:\t" . $newloc{$path_final} . "mp3s\n";
+    print "$finalpath : " . $newloc{$path_final} . " tracks\n";
   }
 
   close (FILEHANDLER);
