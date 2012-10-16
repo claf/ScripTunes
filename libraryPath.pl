@@ -11,9 +11,11 @@ my $PROGNAME=$progpath[-1];
 
 sub print_usage()
 {
-  print "Usage : ./$PROGNAME bibliotheque.xml [/prefix]\n";
-  print "\tcherche tous les chemins de niveau \"profondeur\" differents dans
-  bibliotheque.xml\n";
+  print "Usage : ./$PROGNAME iTuneLibrary.xml [/prefix]\n";
+  print "\n\tThis program allow an iTunes user to digg into an iTunes XML";
+  print "\n\tfile. The output will list every folder containing music tracks";
+  print "\n\t(together with the track count form a given parent folder";
+  print "\n\t(prefix).\n";
   exit ();
 }
 
