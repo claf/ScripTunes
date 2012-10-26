@@ -14,5 +14,4 @@ Authors
 =======
 
 Julien Gautier <rampeur+github@gmail.com>
-
-Christophe Laferrière <christophe.laferriere+github@gmail.com]
+Christophe Laferrière <christophe.laferriere+github@gmail.com>
