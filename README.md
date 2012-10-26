@@ -13,6 +13,6 @@ Library file.
 Authors
 =======
 
-Julien Gautier <rampeur@gmail.com>
+Julien Gautier <rampeur+github@gmail.com>
 
-Christophe Laferrière [christophe(dot)laferriere(at)gmail(dot)com]
+Christophe Laferrière <christophe.laferriere+github@gmail.com]
