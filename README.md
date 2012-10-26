@@ -13,5 +13,5 @@ Library file.
 Authors
 =======
 
-Julien Gautier <rampeur+github@gmail.com>
-Christophe Laferrière <christophe.laferriere+github@gmail.com>
+Julien Gautier rampeur+github@gmail.com
+Christophe Laferrière christophe.laferriere+github@gmail.com
