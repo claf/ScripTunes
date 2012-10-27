@@ -162,7 +162,7 @@ my ($candidate_map, $candidate_id) = l2h ($candidate_library);
 
 if ($matched_list)
 {
-    foreach my $key (keys %$reference_map)
+    foreach my $key (sort (keys %$reference_map))
     {
 	verbose_print ("key : $key");
 	if ($$candidate_map{$key})
