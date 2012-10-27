@@ -54,6 +54,8 @@ GetOptions ('h|help|?'  => \$help,
 	    'p|prefix=s'=> \$prefix) or pod2usage(2);
 
 pod2usage(1) if $help;
+# garanty there will be something on the command line :
+pod2usage(-verbose => 0) unless @ARGV;
 pod2usage(-verbose => 2) if $man;
 
 ## If no arguments were given, then allow STDIN to be used only
@@ -68,12 +70,6 @@ if ($version)
     exit;
 }
 
-if ($help)
-{
-    print_help ();
-    exit;
-}
-
 # iTunes XML Library :
 my $library;
 
@@ -82,8 +78,7 @@ my %newloc;
 
 if (scalar @ARGV != 1)
 {
-  print_usage();
-  exit;
+  pod2usage(-verbose => 0);
 } else {
   $library = shift @ARGV;
 }
