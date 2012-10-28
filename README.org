@@ -13,7 +13,7 @@ libraries.
 
 ** Authors
 
-[[rampeur%2Bgithub@gmail.com][Julien Gautier]]
+[[mailto:rampeur+github@gmail.com][Julien Gautier]]
 
-[[christophe.laferriere%2Bgithub@gmail.com][Christophe Laferrière]]
+[[mailto:christophe.laferriere+github@gmail.com][Christophe Laferrière]]
 
