@@ -16,7 +16,7 @@ use Pod::Usage;
 
 my @progpath=split (/\//, $0);
 my $PROGNAME=$progpath[-1];
-my $VER_NUM="0.1";
+my $VER_NUM="0.2";
 
 my $man = 0;
 my $help = 0;
@@ -70,10 +70,10 @@ GetOptions ('h|help|?'               => \$help,
 
 pod2usage(1) if $help;
 pod2usage(-verbose => 2) if $man;
-pod2usage("-ml and -ro are exclusive") if defined $matched_list and $reference_orphelin;
-pod2usage("-ml and -co are exclusive") if defined $matched_list and $candidate_orphelin;
-pod2usage("-co and -ro are exclusive") if defined $candidate_orphelin and $reference_orphelin;
 pod2usage("-rl and -cl are mandatory") unless $reference_library and $candidate_library;
+pod2usage("-ml and -ro are exclusive") if $matched_list and $reference_orphelin;
+pod2usage("-ml and -co are exclusive") if $matched_list and $candidate_orphelin;
+pod2usage("-co and -ro are exclusive") if $candidate_orphelin and $reference_orphelin;
 
 
 ## If no arguments were given, then allow STDIN to be used only
@@ -140,11 +140,11 @@ sub l2h
 		if ($newloc{$hashkey})
 		{
 		    $newloc{$hashkey}++;
-		    die ("Found existing location : $hashkey");
+		    print ("Found existing location : $hashkey");
 		} else {
 		    verbose_print ("Adding new location : $hashkey");
 		    verbose_print ("Adding new trackid : $trackid");
-		    $newloc{$hashkey} = 1;
+		    $newloc{$hashkey} = -1;
 		    $newid{$hashkey} = $trackid;
 		}
 	    }
@@ -160,17 +160,32 @@ sub l2h
 my ($reference_map, $reference_id) = l2h ($reference_library);
 my ($candidate_map, $candidate_id) = l2h ($candidate_library);
 
-if ($matched_list)
-{
-    foreach my $key (sort (keys %$reference_map))
-    {
-	verbose_print ("key : $key");
-	if ($$candidate_map{$key})
-	  {
-	      print $$reference_id{$key} ." - ". $$candidate_id{$key} . "\n";
-	  }
+foreach my $key (sort (keys %$reference_map)) {
+    verbose_print ("key : $key");
+    if ($$candidate_map{$key}) {
+	$$candidate_map{$key} = 1;
+	$$reference_map{$key} = 1;
+	if ($matched_list) {
+	    print $$reference_id{$key} ." - ". $$candidate_id{$key} . "\n";
+	}
+    } else {
+	if ($reference_orphelin) {
+	    print $$reference_id{$key} . "\n";
+	}
     }
 }
+
+if ($candidate_orphelin) {
+    foreach my $key (sort (keys %$candidate_map)) {
+	if ($$candidate_map{$key} == -1) {
+	    print $$candidate_id{$key} . "\n";
+	}
+    }
+}
+
+
+
+
 
 #   foreach my $path_final ( sort keys %newloc) {
 #     #my $nicepath = trim (/localhost/, $$path_final);
