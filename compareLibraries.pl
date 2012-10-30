@@ -117,13 +117,16 @@ sub parse {
     return $lib;
 }
 
+print "parse start\n";
 
 my $reference_thread = threads->new(\&parse, $reference_file);
-my $candidate_thread = threads->new(\&parse, $candidate_file);
+print "thread 1 started\n";
+print "function 1 starting\n";
+my $candidate_thread = parse ($candidate_file);
+print "function 1 finished\n";
 
 my @ref_ar = $reference_thread->join;
-my @can_ar = $candidate_thread->join;
-
+print "thread 1 finished\n";
 
 
 __END__
