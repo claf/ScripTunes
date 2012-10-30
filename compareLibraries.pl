@@ -4,6 +4,9 @@ use strict;
 use warnings;
 use Path::Abstract;
 
+# Perl Threads :
+use threads;
+
 # Now uses Getopt::Long instead of Getopt:Std :
 #use Getopt::Std;
 use Getopt::Long qw{:config no_ignore_case no_auto_abbrev};
@@ -106,14 +109,20 @@ verbose_print ("candidate-path=s : $candidate_path");
 verbose_print ("reference-file=s : $reference_file");
 verbose_print ("candidate-file=s : $candidate_file");
 
-print "Loading 'Reference Library : $reference_file'...";
-my $reference_library = Mac::iTunes::Library::XML->parse($reference_file);
-print " loaded " . $reference_library->num() . " items.\n"; 
-print "Loading 'Candidate Library : $candidate_file'...";
-my $candidate_library = Mac::iTunes::Library::XML->parse($candidate_file);
-print " loaded " . $candidate_library->num() . " items.\n"; 
+sub parse {
+    my $file = shift;
+    print "Loading Library : '$file'...";
+    my $lib = Mac::iTunes::Library::XML->parse($file);
+    print " loaded " . $lib->num() . " items.\n"; 
+    return $lib;
+}
 
 
+my $reference_thread = threads->new(\&parse, $reference_file);
+my $candidate_thread = threads->new(\&parse, $candidate_file);
+
+my @ref_ar = $reference_thread->join;
+my @can_ar = $candidate_thread->join;
 
 
 
