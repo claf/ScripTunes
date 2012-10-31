@@ -1,0 +1,34 @@
+** cperl, perl and emacs
+
+In order to use perldoc from Emacs, type ‘M-x cperl-perldoc’, hit Return and
+type the keyword to look up. Recommended!
+
+*** Finding Perl modules
+
+As an alternative to the ffap version above, the following will find a given
+Perl module, using perl’s internal lookup to find the module:
+
+    (defun perl-module-path (module-name)
+      (let* ((file-name
+              (concat (replace-regexp-in-string "::" "/" module-name)
+                      ".pm"))
+             (command-line
+              (concat "perl -M'"
+                      module-name
+                      "' -e'print $INC{q{"
+                      file-name
+                      "}}'"))
+             (path (shell-command-to-string command-line))
+             (cant-locate (string-match "^Can't locate " path)))
+        (if cant-locate
+            nil
+          path)))
+    (defun find-perl-module (module-name)
+      (interactive "sPerl module name: ")
+      (let ((path (perl-module-path module-name)))
+        (if path
+            (find-file path)
+          (error "Module '%s' not found" module-name))))
+Lisp:perl-find-library.el also provides ‘M-x perl-find-library’, which has the
+      same function, but does tab-completion on its input, and uses perldoc -l
+      to find the library.

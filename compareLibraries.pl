@@ -111,22 +111,18 @@ verbose_print ("candidate-file=s : $candidate_file");
 
 sub parse {
     my $file = shift;
-    print "Loading Library : '$file'...";
+    verbose_print ("Loading Library : '$file'...");
     my $lib = Mac::iTunes::Library::XML->parse($file);
-    print " loaded " . $lib->num() . " items.\n"; 
+    verbose_print (" loaded " . $lib->num() . " items.\n");
     return $lib;
 }
 
-print "parse start\n";
-
 my $reference_thread = threads->new(\&parse, $reference_file);
-print "thread 1 started\n";
-print "function 1 starting\n";
+
 my $candidate_thread = parse ($candidate_file);
-print "function 1 finished\n";
 
 my @ref_ar = $reference_thread->join;
-print "thread 1 finished\n";
+
 
 
 __END__
