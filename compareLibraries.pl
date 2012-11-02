@@ -118,12 +118,28 @@ sub parse {
 }
 
 my $reference_thread = threads->new(\&parse, $reference_file);
-
-my $candidate_thread = parse ($candidate_file);
+my $candidate_lib = parse ($candidate_file);
 
 my @ref_ar = $reference_thread->join;
 
+sub verbose_lib_summary {
+    my ($title, $library) = @_;
+    my %artists = $library->artist();
+    my %albums = $library->albumArtist();
+    verbose_print ("\n" . $title . "\n");
+    verbose_print ("Number of artists: " . scalar ( keys %artists ) . " artists.");
+    verbose_print ("Number of albums: " . scalar ( keys %albums ) . " albums.");
+    verbose_print ("Number of tracks: " . $library->num() . " tracks.");
+    verbose_print ("Version: " . $library->version());
+    verbose_print ("Total size of the library: " . $library->size());
+    verbose_print ("Total time of the library: " . $library->time());
+    verbose_print ("\n");
+}
 
+my $reference_lib = shift @ref_ar;
+
+verbose_lib_summary ("Reference library: ", $reference_lib);
+verbose_lib_summary ("Candidate library: ", $candidate_lib);
 
 __END__
 
