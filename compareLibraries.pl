@@ -4,12 +4,19 @@ use strict;
 use warnings;
 use Path::Abstract;
 
+# Perl Threads :
+use threads;
+
 # Now uses Getopt::Long instead of Getopt:Std :
 #use Getopt::Std;
 use Getopt::Long qw{:config no_ignore_case no_auto_abbrev};
 
 # Getopt::Long encourages the use of Pod::Usage to produce help messages :
 use Pod::Usage;
+
+use Mac::iTunes::Library;
+use Mac::iTunes::Library::XML;
+use Mac::iTunes::Library::Item;
 
 # Not Used :
 #use Text::Wrap;
@@ -32,8 +39,8 @@ my $reference_orphelin = '';
 my $candidate_orphelin = '';
 my $reference_path = '';
 my $candidate_path = '';
-my $reference_library = '';
-my $candidate_library = '';
+my $reference_file = '';
+my $candidate_file = '';
 
 sub verbose_print
 {
@@ -65,12 +72,12 @@ GetOptions ('h|help|?'               => \$help,
 	    'co|candidate-orphelin'  => \$candidate_orphelin,
 	    'rp|reference-path=s'    => \$reference_path,
 	    'cp|candidate-path=s'    => \$candidate_path,
-	    'rl|reference-library=s' => \$reference_library,
-	    'cl|candidate-library=s' => \$candidate_library) or pod2usage(2);
+	    'rl|reference-file=s' => \$reference_file,
+	    'cl|candidate-file=s' => \$candidate_file) or pod2usage(2);
 
 pod2usage(1) if $help;
 pod2usage(-verbose => 2) if $man;
-pod2usage("-rl and -cl are mandatory") unless $reference_library and $candidate_library;
+pod2usage("-rl and -cl are mandatory") unless $reference_file and $candidate_file;
 pod2usage("-ml and -ro are exclusive") if $matched_list and $reference_orphelin;
 pod2usage("-ml and -co are exclusive") if $matched_list and $candidate_orphelin;
 pod2usage("-co and -ro are exclusive") if $candidate_orphelin and $reference_orphelin;
@@ -99,108 +106,40 @@ verbose_print ("reference-orphelin : $reference_orphelin");
 verbose_print ("candidate-orphelin : $candidate_orphelin");
 verbose_print ("reference-path=s : $reference_path");
 verbose_print ("candidate-path=s : $candidate_path");
-verbose_print ("reference-library=s : $reference_library");
-verbose_print ("candidate-library=s : $candidate_library");
+verbose_print ("reference-file=s : $reference_file");
+verbose_print ("candidate-file=s : $candidate_file");
 
-sub l2h
-{
-    (my $library) = @_;
-    my %newloc;
-    my %newid;
-    open(FILEHANDLER, $library) or die $!;
-
-    my $trackid = 0;
-
-  SCAN: {
-    while (my $line = <FILEHANDLER>)
-    {
-	if ($line =~ /.*<key>Playlists<.*/)
-	{
-	    verbose_print ("Found begining of playlist");
-	    last SCAN;
-	}
-
-	if ($line =~ /.*<key>Track ID.*/)
-	{
-	    if ($line =~ /.*<integer>([0-9]*)<.*/)
-	    {
-		$trackid = $1;
-		verbose_print ("Track ID is : $trackid");
-	    }
-	}
-
-	if ($line =~ /.*<key>Location.*/)
-	{
-	    if ($line =~ /.*localhost$reference_path.*/)
-	    {
-		my @path = split (/\//, $line);
-		my $count = scalar @path;
-		my $hashkey = $path[$count-3] ."/". $path[$count-2];
-
-		if ($newloc{$hashkey})
-		{
-		    $newloc{$hashkey}++;
-		    print ("Found existing location : $hashkey");
-		} else {
-		    verbose_print ("Adding new location : $hashkey");
-		    verbose_print ("Adding new trackid : $trackid");
-		    $newloc{$hashkey} = -1;
-		    $newid{$hashkey} = $trackid;
-		}
-	    }
-	}
-    }
+sub parse {
+    my $file = shift;
+    verbose_print ("Loading Library : '$file'...");
+    my $lib = Mac::iTunes::Library::XML->parse($file);
+    verbose_print (" loaded " . $lib->num() . " items.\n");
+    return $lib;
 }
 
-    close (FILEHANDLER);
+my $reference_thread = threads->new(\&parse, $reference_file);
+my $candidate_lib = parse ($candidate_file);
 
-    return (\%newloc, \%newid);
+my @ref_ar = $reference_thread->join;
+
+sub verbose_lib_summary {
+    my ($title, $library) = @_;
+    my %artists = $library->artist();
+    my %albums = $library->albumArtist();
+    verbose_print ("\n" . $title . "\n");
+    verbose_print ("Number of artists: " . scalar ( keys %artists ) . " artists.");
+    verbose_print ("Number of albums: " . scalar ( keys %albums ) . " albums.");
+    verbose_print ("Number of tracks: " . $library->num() . " tracks.");
+    verbose_print ("Version: " . $library->version());
+    verbose_print ("Total size of the library: " . $library->size());
+    verbose_print ("Total time of the library: " . $library->time());
+    verbose_print ("\n");
 }
 
-my ($reference_map, $reference_id) = l2h ($reference_library);
-my ($candidate_map, $candidate_id) = l2h ($candidate_library);
+my $reference_lib = shift @ref_ar;
 
-foreach my $key (sort (keys %$reference_map)) {
-    verbose_print ("key : $key");
-    if ($$candidate_map{$key}) {
-	$$candidate_map{$key} = 1;
-	$$reference_map{$key} = 1;
-	if ($matched_list) {
-	    print $$reference_id{$key} ." - ". $$candidate_id{$key} . "\n";
-	}
-    } else {
-	if ($reference_orphelin) {
-	    print $$reference_id{$key} . "\n";
-	}
-    }
-}
-
-if ($candidate_orphelin) {
-    foreach my $key (sort (keys %$candidate_map)) {
-	if ($$candidate_map{$key} == -1) {
-	    print $$candidate_id{$key} . "\n";
-	}
-    }
-}
-
-
-
-
-
-#   foreach my $path_final ( sort keys %newloc) {
-#     #my $nicepath = trim (/localhost/, $$path_final);
-#     my $finalpath = Path::Abstract->new( $reference_path . "/" . $path_final );
-
-#     print "$finalpath : " . $newloc{$path_final} . " tracks\n";
-# }
-
-
-
-
-
-
-
-
+verbose_lib_summary ("Reference library: ", $reference_lib);
+verbose_lib_summary ("Candidate library: ", $candidate_lib);
 
 __END__
 
