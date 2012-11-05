@@ -3,132 +3,113 @@
 use strict;
 use warnings;
 use Path::Abstract;
+use Routines qw(verbose_print verbose_init);
+
+# On demand export :
+#use Routines qw(dummy);
+#dummy ();
 
 # Now uses Getopt::Long instead of Getopt:Std :
-#use Getopt::Std;
 use Getopt::Long qw{:config no_ignore_case no_auto_abbrev};
 
 # Getopt::Long encourages the use of Pod::Usage to produce help messages :
 use Pod::Usage;
 
-# Not Used :
-#use Text::Wrap;
-
-my @progpath=split (/\//, $0);
-my $PROGNAME=$progpath[-1];
-my $VER_NUM="0.2";
-
-my $man = 0;
-my $help = 0;
+my @progpath = split( /\//, $0 );
+my $PROGNAME = $progpath[-1];
+my $VER_NUM  = "0.2.1";
 
 # Options :
+my $man     = 0;
+my $help    = 0;
 my $verbose = '';
 my $version = '';
-my $count = '';
-my $prefix = '/';
-
-sub verbose_print
-{
-    my $string = shift;
-    if ($verbose)
-    {
-	print $string;
-    }
-}
-
-## Configuring Text::Wrap :
-#$Text::Wrap::columns = 72;
-
-# Get every option on the command line :
-#my %opts = ();
-#getopts('Vvhnp:',\%opts) or print_usage();
-
+my $count   = '';
+my $prefix  = '/';
 
 ## Parse options and print usage if there is a syntax error,
 ## or if usage was explicitly requested.
-GetOptions ('h|help|?'  => \$help,
-	    'm|man'     => \$man,
-	    'V|Verbose' => \$verbose,
-	    'v|version' => \$version,
-	    'c|count!'  => \$count,
-	    'p|prefix=s'=> \$prefix) or pod2usage(2);
+GetOptions(
+    'h|help|?'   => \$help,
+    'm|man'      => \$man,
+    'V|Verbose'  => \$verbose,
+    'v|version'  => \$version,
+    'c|count!'   => \$count,
+    'p|prefix=s' => \$prefix
+) or pod2usage(2);
 
 pod2usage(1) if $help;
-# garanty there will be something on the command line :
-pod2usage(-verbose => 0) unless @ARGV;
-pod2usage(-verbose => 2) if $man;
-
-## If no arguments were given, then allow STDIN to be used only
-## if it's not connected to a terminal (otherwise print usage)
-#pod2usage("$0: No files given.")  if ((@ARGV == 0) && (-t STDIN));
-
+pod2usage( -verbose => 2 ) if $man;
 
 # Handle different options :
-if ($version)
-{
+if ($version) {
     print "$PROGNAME ver. $VER_NUM\n";
     exit;
 }
 
+## If no arguments were given, then allow STDIN to be used only
+## if it's not connected to a terminal (otherwise print usage)
+pod2usage("$0: No files given.") if ( ( @ARGV == 0 ) && ( -t STDIN ) );
+
+verbose_init($verbose);
+
 # iTunes XML Library :
-my $library;
+my $library = '<stdin>';
+if (@ARGV) {
+
+    # don't use shift here becose '<>' seems to rely on @ARGV :
+    $library = $ARGV[0];
+}
 
 # Hashmap containing new directories at given depth (see prefix) :
 my %newloc;
 
-if (scalar @ARGV != 1)
-{
-  pod2usage(-verbose => 0);
-} else {
-  $library = shift @ARGV;
-}
+verbose_print("Verbose output set to true\n");
+verbose_print("Prefix set to : $prefix\n");
+verbose_print("MP3 count set to : $count\n");
+verbose_print("In Library file : $library\n");
 
-verbose_print ("Verbose output set to true\n");
-verbose_print ("Prefix set to : $prefix\n");
-verbose_print ("MP3 count set to : $count\n");
-verbose_print ("In Library file : $library\n");
-
-open(FILEHANDLER, $library) or die $!;
 my $nb_mp3 = 0;
 
-while (my $line = <FILEHANDLER>)
-{
-    if ($line =~ /.*<key>Location.*/)
-    {
-      verbose_print ($prefix . "    &&&    " . $line ."\n");
+# No more need to open the file since '<>':
+#open(FILEHANDLER, $library) or die $!;
+#while (my $line = <FILEHANDLER>)
 
-      if ($line =~ /.*localhost$prefix.*/)
-      {
-	  $nb_mp3++;
-	  my @path = split (/\/\/localhost/, $line);
-	  #print $path[1] . "\n";
-	  my @path2 = split (/\//, $prefix);
-	  my $count = scalar @path2;
-	  if ($count == 0 ) {
-        $count = 1;
-      }
-      my @path3 = split (/\//, $path[1]); 
-      #print $path3[$count] . "    &&    " . $count . "\n";
+while ( my $line = <> ) {
+    if ( $line =~ /.*<key>Location.*/ ) {
+        $line =~ s/%20/\ /g;
 
-      if ($newloc{$path3[$count]})
-      {
-        $newloc{$path3[$count]}++;
-      } else {
-        #print "Adding new location : $path3[$count] (count = $count)\n";
-        $newloc{$path3[$count]} = 1;
-      }
+        if ( $line =~ /.*localhost$prefix.*/ ) {
+            $nb_mp3++;
+            my @path  = split( /\/\/localhost/, $line );
+            my @path2 = split( /\//,            $prefix );
+            my $count = scalar @path2;
+
+            if ( $count == 0 ) {
+                $count = 1;
+            }
+            my @path3 = split( /\//, $path[1] );
+
+            if ( $newloc{ $path3[$count] } ) {
+                $newloc{ $path3[$count] }++;
+            }
+            else {
+
+                $newloc{ $path3[$count] } = 1;
+            }
+        }
     }
-    }
-  }
-
-  foreach my $path_final ( sort keys %newloc) {
-    #my $nicepath = trim (/localhost/, $$path_final);
-    my $finalpath = Path::Abstract->new( $prefix . "/" . $path_final );
-
-    print "$finalpath : " . $newloc{$path_final} . " tracks\n";
 }
 
-close (FILEHANDLER);
+foreach my $path_final ( sort keys %newloc ) {
+    print "$path_final\n";
+
+    my $finalpath = Path::Abstract->new( $prefix . "/" . $path_final );
+
+    print "$finalpath\t: " . $newloc{$path_final} . " tracks\n";
+}
+
+#close (FILEHANDLER);
 
 __END__
 
@@ -184,10 +165,10 @@ L<perlpod>, L<perldoc>, L<Getopt::Long>, L<Pod::Usage>.
 
 Copyright 2012 Christophe Laferriere.
 
-Permission is granted to copy, distribute and/or modify this 
-document under the terms of the GNU Free Documentation 
-License, Version 1.2 or any later version published by the 
-Free Software Foundation; with no Invariant Sections, with 
-no Front-Cover Texts, and with no Back-Cover Texts.
+Permission is granted to copy, distribute and/or modify this  document
+under the terms of the GNU Free Documentation  License, Version 1.2 or
+any later version published by the  Free Software Foundation; with no
+Invariant Sections, with  no Front-Cover Texts, and with no Back-Cover
+Texts.
 
 =cut
