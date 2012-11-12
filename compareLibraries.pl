@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use Path::Abstract;
 use Local::Debug qw(debug_init debug debug_switch);
+use Local::Routines qw(version parse);
 
 # Perl Threads :
 use threads;
@@ -73,11 +74,7 @@ pod2usage("-co and -ro are exclusive")
 #pod2usage("$0: No files given.")  if ((@ARGV == 0) && (-t STDIN));
 
 # Handle different options :
-if ($version) {
-    print "$PROGNAME ver. $VER_NUM\n";
-    exit;
-}
-
+version( $version, $PROGNAME, $VER_NUM );
 debug_init($debug);
 
 debug("debug output set to $debug");
@@ -90,14 +87,6 @@ debug("reference-path=s : $reference_path");
 debug("candidate-path=s : $candidate_path");
 debug("reference-file=s : $reference_file");
 debug("candidate-file=s : $candidate_file");
-
-sub parse {
-    my $file = shift;
-    debug("Loading Library : '$file'...");
-    my $lib = Mac::iTunes::Library::XML->parse($file);
-    debug( " loaded " . $lib->num() . " items.\n" );
-    return $lib;
-}
 
 my $reference_thread = threads->new( \&parse, $reference_file );
 my $candidate_lib    = parse($candidate_file);

@@ -42,10 +42,7 @@ pod2usage(1) if $help;
 pod2usage( -verbose => 2 ) if $man;
 
 # Handle different options :
-if ($version) {
-    print "$PROGNAME ver. $VER_NUM\n";
-    exit;
-}
+version( $version, $PROGNAME, $VER_NUM );
 
 ## If no arguments were given, then allow STDIN to be used only
 ## if it's not connected to a terminal (otherwise print usage)
