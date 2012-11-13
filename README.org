@@ -1,3 +1,5 @@
+* README
+
 ** ScripTunes
 
 Collection of tools to manage iTunes Libraries between different users
@@ -9,6 +11,7 @@ Library file.
 - compareLibraries.pl allow you to compare a reference library to a
 candidate one searching for matching and orphelin tracks in both
 libraries.
+-library2JSON.pl produce a JSON output from an iTunes Library.
 - exportLibrary.pl is still in developpement.
 
 ** Authors
