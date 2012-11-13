@@ -34,11 +34,11 @@ my $output  = '';
 ## Parse options and print usage if there is a syntax error,
 ## or if usage was explicitly requested.
 GetOptions(
-    'h|help|?'   => \$help,
-    'm|man'      => \$man,
-    'D|Debug+'   => \$debug,
-    'v|version'  => \$version,
-    'o|output=s' => \$output
+    'h|help|?'        => \$help,
+    'm|man'           => \$man,
+    'D|Debug+'        => \$debug,
+    'v|version'       => \$version,
+    'o|output-file=s' => \$output
 ) or pod2usage(2);
 
 pod2usage(1) if $help;
