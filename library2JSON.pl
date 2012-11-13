@@ -13,6 +13,8 @@ use Getopt::Long qw{:config no_ignore_case no_auto_abbrev};
 # Getopt::Long encourages the use of Pod::Usage to produce help messages :
 use Pod::Usage;
 
+use POSIX qw(strftime);
+
 use Mac::iTunes::Library;
 use Mac::iTunes::Library::XML;
 use Mac::iTunes::Library::Item;
@@ -28,6 +30,9 @@ my $VER_NUM  = "0.1";
 my $man     = 0;
 my $help    = 0;
 my $debug   = 0;
+my $curl    = 0;
+my $user    = '';
+my $pass    = '';
 my $version = '';
 my $output  = '';
 
@@ -37,6 +42,9 @@ GetOptions(
     'h|help|?'        => \$help,
     'm|man'           => \$man,
     'D|Debug+'        => \$debug,
+    'c|curl'          => \$curl,
+    'u|user=s'        => \$user,
+    'p|pass=s'        => \$pass,
     'v|version'       => \$version,
     'o|output-file=s' => \$output
 ) or pod2usage(2);
@@ -56,11 +64,11 @@ version( $version, $PROGNAME, $VER_NUM );
 my $file = shift @ARGV;
 
 debug_init($debug);
-debug("file is $file");
+debug("Library is $file");
 
 my $library = parse($file);
 
-open( MYFILE, ">>$output" );
+open( MYFILE, ">$output" );
 
 use JSON::XS;
 my $json = JSON::XS->new();
@@ -68,12 +76,26 @@ my $json = JSON::XS->new();
 # Get the hash of items
 my %items = $library->items();
 
+my $now = time();
+
+# We need to munge the timezone indicator to add a colon between the hour and minute part
+my $tz = strftime( "%z", localtime($now) );
+$tz =~ s/(\d{2})(\d{2})/$1:$2/;
+
+# ISO8601
+my $time = strftime( "%Y-%m-%dT%H:%M:%S", localtime($now) ) . $tz;
+
 print MYFILE "{\n";
+print MYFILE "\t\"library_file\" : \"$file\",\n";
+print MYFILE "\t\"type\" : \"library\",\n";
+print MYFILE "\t\"creation\" : \"$time\",\n";
+print MYFILE "\t\"tracks\" : [\n";
+
 my $number_id = 0;
 my $json_init = 0;
 
 foreach my $artist ( sort keys %items ) {
-    debug("foreach Artist : $artist");
+    debug( "foreach Artist : $artist", 2 );
 
     # $artistSongs is a hash-ref
     my $artistSongs = $items{$artist};
@@ -81,7 +103,7 @@ foreach my $artist ( sort keys %items ) {
     # Dereference $artistSongs so that you can pass it to keys()
     # $songName is a key in the $artistSongs hash-ref
     foreach my $songName ( sort keys %$artistSongs ) {
-        debug("foreach Song Name $songName");
+        debug( "foreach Song Name $songName", 2 );
 
         # The songs are stored as an array, because there can
         # be multiple songs with identical names
@@ -89,28 +111,48 @@ foreach my $artist ( sort keys %items ) {
 
         # Go through all of the songs in the array-ref
         foreach my $song (@$artistSongItems) {
-            $number_id++;
-            debug("foreach Song $song (counter is $number_id");
+
+            #$number_id++;
+            debug( "foreach Song $song (counter is $number_id)", 2 );
 
             if ( $json_init == 0 ) {
                 $json_init = 1;
-                print MYFILE "\"$number_id\" : ";
-                print MYFILE $json->allow_nonref->allow_blessed->convert_blessed
+
+                #print MYFILE "\"$number_id\" : ";
+                print MYFILE "\t\t"
+                  . $json->allow_nonref->allow_blessed->convert_blessed
                   ->encode($song);
             }
             else {
-                print MYFILE ",";
-                print MYFILE "\"$number_id\" : ";
-                print MYFILE $json->allow_nonref->allow_blessed->convert_blessed
+                print MYFILE ",\n";
+
+                #print MYFILE "\"$number_id\" : ";
+                print MYFILE "\t\t"
+                  . $json->allow_nonref->allow_blessed->convert_blessed
                   ->encode($song);
             }
         }
     }
 }
 
-print MYFILE "\n}\n";
+print MYFILE "\n\t]\n}\n";
 
 close(MYFILE);
+
+debug("File $output created at $time.");
+
+if ( $curl == 1 ) {
+    my $cmd =
+        'curl -X POST http://'
+      . $user . ':'
+      . $pass
+      . '@scriptunes.netgrowing.net:5984/blogdb -d @'
+      . $output
+      . ' -H "Content-Type:application/json"';
+    debug($cmd);
+
+    #system $cmd;
+}
 
 __END__
 
@@ -120,7 +162,7 @@ library2JSON - let you extract an iTunes Library file into JSON format.
 
 =head1 SYNOPSIS
 
-library2JSON library.xml [-o file.json]
+library2JSON library.xml [-o file.json] [-c -u user -p pass]
 
 =head1 OPTIONS
 
@@ -137,6 +179,18 @@ Prints the manual page and exits.
 =item B<-v, --version>
 
 Print version number.
+
+=item B<-c, --curl>
+
+Create distant CouchDB document using curl.
+
+=item B<-u, --user>
+
+User name.
+
+=item B<-p, --pass>
+
+Password.
 
 =item B<-o, --output-file file.json>
 
