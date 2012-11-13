@@ -31,6 +31,10 @@ sub debug {
         $debug_level = 1;
     }
 
+    if ( $debug_value == 0 ) {
+        return $message;
+    }
+
     if ( $debug_value >= $debug_level ) {
         if ( $debug_level == -1 ) {
             print "$message\n";

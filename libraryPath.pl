@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use Path::Abstract;
 use Local::Debug qw(debug debug_init);
+use Local::Routines qw(version);
 
 # On demand export :
 #use Routines qw(dummy);
