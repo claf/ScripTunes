@@ -77,6 +77,7 @@ pod2usage("-co and -ro are exclusive")
 version( $version, $PROGNAME, $VER_NUM );
 debug_init($debug);
 
+debug( "\n############ SUMMARY ############", -1 );
 debug("debug output set to $debug");
 debug("matched-list : $matched_list");
 debug("interactive : $interactive");
@@ -87,28 +88,31 @@ debug("reference-path=s : $reference_path");
 debug("candidate-path=s : $candidate_path");
 debug("reference-file=s : $reference_file");
 debug("candidate-file=s : $candidate_file");
+debug( "############ END ############\n", -1 );
 
+debug( "\n############ Parse ############", -1 );
 my $reference_thread = threads->new( \&parse, $reference_file );
 my $candidate_lib    = parse($candidate_file);
 my @ref_ar           = $reference_thread->join;
 my $reference_lib    = shift @ref_ar;
+debug( "############ end Parse ############\n", -1 );
 
 sub debug_lib_summary {
     my ( $title, $library ) = @_;
     my %artists = $library->artist();
     my %albums  = $library->albumArtist();
-    debug( "\n" . $title . "\n" );
+    debug( "\n############ $title ############", -1 );
     debug( "Number of artists: " . scalar( keys %artists ) . " artists." );
     debug( "Number of albums: " . scalar( keys %albums ) . " albums." );
     debug( "Number of tracks: " . $library->num() . " tracks." );
     debug( "Version: " . $library->version() );
     debug( "Total size of the library: " . $library->size() );
     debug( "Total time of the library: " . $library->time() );
-    debug("\n");
+    debug( "############ end $title ############\n", -1 );
 }
 
-debug_lib_summary( "Reference library: ", $reference_lib );
-debug_lib_summary( "Candidate library: ", $candidate_lib );
+debug_lib_summary( "Reference Library : $reference_file", $reference_lib );
+debug_lib_summary( "Candidate Library : $candidate_file", $candidate_lib );
 
 __END__
 
