@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Path::Abstract;
 use Local::Debug qw(debug_init debug debug_switch);
-use Local::Routines qw(version parse);
+use Local::Routines qw(version parse get_json_date);
 
 # Now uses Getopt::Long instead of Getopt:Std :
 #use Getopt::Std;
@@ -76,19 +76,12 @@ my $json = JSON::XS->new();
 # Get the hash of items
 my %items = $library->items();
 
-my $now = time();
-
-# We need to munge the timezone indicator to add a colon between the hour and minute part
-my $tz = strftime( "%z", localtime($now) );
-$tz =~ s/(\d{2})(\d{2})/$1:$2/;
-
-# ISO8601
-my $time = strftime( "%Y-%m-%dT%H:%M:%S", localtime($now) ) . $tz;
+my $now = get_json_date();
 
 print MYFILE "{\n";
 print MYFILE "\t\"library_file\" : \"$file\",\n";
 print MYFILE "\t\"type\" : \"library\",\n";
-print MYFILE "\t\"creation\" : \"$time\",\n";
+print MYFILE "\t\"created_at\" : \"$now\",\n";
 print MYFILE "\t\"tracks\" : [\n";
 
 my $number_id = 0;
@@ -139,7 +132,7 @@ print MYFILE "\n\t]\n}\n";
 
 close(MYFILE);
 
-debug("File $output created at $time.");
+debug("File $output created at $now.");
 
 if ( $curl == 1 ) {
     my $cmd =
