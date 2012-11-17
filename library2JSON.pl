@@ -1,4 +1,4 @@
-#!/opt/local/bin/perl
+#!/opt/local/bin/perl -Cio
 
 use strict;
 use warnings;
