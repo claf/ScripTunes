@@ -1,3 +1,4 @@
+*.json
 *.bak
 blib/
 .build/
