@@ -24,7 +24,7 @@ use Mac::iTunes::Library::Item;
 
 my @progpath = split( /\//, $0 );
 my $PROGNAME = $progpath[-1];
-my $VER_NUM  = "0.1";
+my $VER_NUM  = "0.2";
 
 # Options :
 my $man     = 0;
@@ -35,6 +35,8 @@ my $user    = '';
 my $pass    = '';
 my $version = '';
 my $output  = '';
+my $lib_id  = '';
+my $author  = '';
 
 ## Parse options and print usage if there is a syntax error,
 ## or if usage was explicitly requested.
@@ -46,7 +48,9 @@ GetOptions(
     'u|user=s'        => \$user,
     'p|pass=s'        => \$pass,
     'v|version'       => \$version,
-    'o|output-file=s' => \$output
+    'o|output-file=s' => \$output,
+    'l|library=s'     => \$lib_id,
+    'a|author=s'      => \$author
 ) or pod2usage(2);
 
 pod2usage(1) if $help;
@@ -68,7 +72,12 @@ debug("Library is $file");
 
 my $library = parse($file);
 
-open( MYFILE, ">$output" );
+if ($output) {
+    open( MYFILE, '>', $output ) or die;
+}
+else {
+    open( MYFILE, '>&', \*STDOUT ) or die;
+}
 
 use JSON::XS;
 my $json = JSON::XS->new();
@@ -78,11 +87,14 @@ my %items = $library->items();
 
 my $now = get_json_date();
 
-print MYFILE "{\n";
-print MYFILE "\t\"library_file\" : \"$file\",\n";
-print MYFILE "\t\"type\" : \"library\",\n";
-print MYFILE "\t\"created_at\" : \"$now\",\n";
-print MYFILE "\t\"tracks\" : [\n";
+print MYFILE "{\"code\" : \"200\", \"json\" : \n";
+print MYFILE "{\n\t\"docs\" : [\n";
+print MYFILE "\t{\n";
+print MYFILE "\t\t\"library_id\" : \"$lib_id\",\n";
+print MYFILE "\t\t\"library_file\" : \"$file\",\n";
+print MYFILE "\t\t\"author\" : \"$author\",\n";
+print MYFILE "\t\t\"type\" : \"library\",\n";
+print MYFILE "\t\t\"created_at\" : \"$now\"\n\t},\n";
 
 my $number_id = 0;
 my $json_init = 0;
@@ -108,11 +120,13 @@ foreach my $artist ( sort keys %items ) {
             #$number_id++;
             debug( "foreach Song $song (counter is $number_id)", 2 );
 
+            $song->libraryID($lib_id);
+
             if ( $json_init == 0 ) {
                 $json_init = 1;
 
                 #print MYFILE "\"$number_id\" : ";
-                print MYFILE "\t\t"
+                print MYFILE "\t"
                   . $json->allow_nonref->allow_blessed->convert_blessed
                   ->encode($song);
             }
@@ -120,7 +134,7 @@ foreach my $artist ( sort keys %items ) {
                 print MYFILE ",\n";
 
                 #print MYFILE "\"$number_id\" : ";
-                print MYFILE "\t\t"
+                print MYFILE "\t"
                   . $json->allow_nonref->allow_blessed->convert_blessed
                   ->encode($song);
             }
@@ -129,6 +143,8 @@ foreach my $artist ( sort keys %items ) {
 }
 
 print MYFILE "\n\t]\n}\n";
+
+print MYFILE ", \"headers\": {\"Content-Type\" : \"Application/json\"}}\n";
 
 close(MYFILE);
 
@@ -188,6 +204,14 @@ Password.
 =item B<-o, --output-file file.json>
 
 Write output to file.
+
+=item B<-l, --library lib_id>
+
+Specify the Library ID.
+
+=item B<-a, --author user>
+
+Specify the author.
 
 =back
 
