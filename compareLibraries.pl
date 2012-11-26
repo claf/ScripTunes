@@ -3,6 +3,8 @@
 use strict;
 use warnings;
 use Path::Abstract;
+use Local::Debug qw(debug_init debug debug_switch);
+use Local::Routines qw(version parse);
 
 # Perl Threads :
 use threads;
@@ -25,13 +27,11 @@ my @progpath = split( /\//, $0 );
 my $PROGNAME = $progpath[-1];
 my $VER_NUM  = "0.2";
 
-my $man  = 0;
-my $help = 0;
-
 # Options :
-my $verbose = '';
-my $version = '';
-
+my $man                  = 0;
+my $help                 = 0;
+my $debug                = 0;
+my $version              = '';
 my $matched_list         = '';
 my $interactive          = '';
 my $intelligent_matching = '';
@@ -42,26 +42,12 @@ my $candidate_path       = '';
 my $reference_file       = '';
 my $candidate_file       = '';
 
-sub verbose_print {
-    my $string = shift;
-    if ($verbose) {
-        print "$string\n";
-    }
-}
-
-## Configuring Text::Wrap :
-#$Text::Wrap::columns = 72;
-
-# Get every option on the command line :
-#my %opts = ();
-#getopts('Vvhnp:',\%opts) or print_usage();
-
 ## Parse options and print usage if there is a syntax error,
 ## or if usage was explicitly requested.
 GetOptions(
     'h|help|?'               => \$help,
     'm|man'                  => \$man,
-    'V|Verbose'              => \$verbose,
+    'D|Debug+'               => \$debug,
     'v|version'              => \$version,
     'ml|matched-list'        => \$matched_list,
     'I|interactive'          => \$interactive,
@@ -88,57 +74,45 @@ pod2usage("-co and -ro are exclusive")
 #pod2usage("$0: No files given.")  if ((@ARGV == 0) && (-t STDIN));
 
 # Handle different options :
-if ($version) {
-    print "$PROGNAME ver. $VER_NUM\n";
-    exit;
-}
+version( $version, $PROGNAME, $VER_NUM );
+debug_init($debug);
 
-# Hashmap containing new directories at given depth (see prefix) :
-my %newloc;
+debug( "\n############ SUMMARY ############", -1 );
+debug("debug output set to $debug");
+debug("matched-list : $matched_list");
+debug("interactive : $interactive");
+debug("intelligent-matching : $intelligent_matching");
+debug("reference-orphelin : $reference_orphelin");
+debug("candidate-orphelin : $candidate_orphelin");
+debug("reference-path=s : $reference_path");
+debug("candidate-path=s : $candidate_path");
+debug("reference-file=s : $reference_file");
+debug("candidate-file=s : $candidate_file");
+debug( "############ END ############\n", -1 );
 
-verbose_print("Verbose output set to true");
-verbose_print("matched-list : $matched_list");
-verbose_print("interactive : $interactive");
-verbose_print("intelligent-matching : $intelligent_matching");
-verbose_print("reference-orphelin : $reference_orphelin");
-verbose_print("candidate-orphelin : $candidate_orphelin");
-verbose_print("reference-path=s : $reference_path");
-verbose_print("candidate-path=s : $candidate_path");
-verbose_print("reference-file=s : $reference_file");
-verbose_print("candidate-file=s : $candidate_file");
-
-sub parse {
-    my $file = shift;
-    verbose_print("Loading Library : '$file'...");
-    my $lib = Mac::iTunes::Library::XML->parse($file);
-    verbose_print( " loaded " . $lib->num() . " items.\n" );
-    return $lib;
-}
-
+debug( "\n############ Parse ############", -1 );
 my $reference_thread = threads->new( \&parse, $reference_file );
-my $candidate_lib = parse($candidate_file);
+my $candidate_lib    = parse($candidate_file);
+my @ref_ar           = $reference_thread->join;
+my $reference_lib    = shift @ref_ar;
+debug( "############ end Parse ############\n", -1 );
 
-my @ref_ar = $reference_thread->join;
-
-sub verbose_lib_summary {
+sub debug_lib_summary {
     my ( $title, $library ) = @_;
     my %artists = $library->artist();
     my %albums  = $library->albumArtist();
-    verbose_print( "\n" . $title . "\n" );
-    verbose_print(
-        "Number of artists: " . scalar( keys %artists ) . " artists." );
-    verbose_print( "Number of albums: " . scalar( keys %albums ) . " albums." );
-    verbose_print( "Number of tracks: " . $library->num() . " tracks." );
-    verbose_print( "Version: " . $library->version() );
-    verbose_print( "Total size of the library: " . $library->size() );
-    verbose_print( "Total time of the library: " . $library->time() );
-    verbose_print("\n");
+    debug( "\n############ $title ############", -1 );
+    debug( "Number of artists: " . scalar( keys %artists ) . " artists." );
+    debug( "Number of albums: " . scalar( keys %albums ) . " albums." );
+    debug( "Number of tracks: " . $library->num() . " tracks." );
+    debug( "Version: " . $library->version() );
+    debug( "Total size of the library: " . $library->size() );
+    debug( "Total time of the library: " . $library->time() );
+    debug( "############ end $title ############\n", -1 );
 }
 
-my $reference_lib = shift @ref_ar;
-
-verbose_lib_summary( "Reference library: ", $reference_lib );
-verbose_lib_summary( "Candidate library: ", $candidate_lib );
+debug_lib_summary( "Reference Library : $reference_file", $reference_lib );
+debug_lib_summary( "Candidate Library : $candidate_file", $candidate_lib );
 
 __END__
 
@@ -148,7 +122,7 @@ compareLibraries - let you compare two iTunes Libraries
 
 =head1 SYNOPSIS
 
-compareLibraries [-hmVviI] [-ml|-ro|-co] [-rp] [-cp] -rl r.xml -cl
+compareLibraries [-hmDviI] [-ml|-ro|-co] [-rp] [-cp] -rl r.xml -cl
 c.xml
 
 =head1 OPTIONS
@@ -163,7 +137,7 @@ Print a brief help message and exits.
 
 Prints the manual page and exits.
 
-=item B<-V, --Verbose>
+=item B<-D, --Debug>
 
 Print more informations during execution.
 

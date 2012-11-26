@@ -3,7 +3,8 @@
 use strict;
 use warnings;
 use Path::Abstract;
-use Routines qw(verbose_print verbose_init);
+use Local::Debug qw(debug debug_init);
+use Local::Routines qw(version);
 
 # On demand export :
 #use Routines qw(dummy);
@@ -22,7 +23,7 @@ my $VER_NUM  = "0.2.1";
 # Options :
 my $man     = 0;
 my $help    = 0;
-my $verbose = '';
+my $debug   = 0;
 my $version = '';
 my $count   = '';
 my $prefix  = '/';
@@ -32,7 +33,7 @@ my $prefix  = '/';
 GetOptions(
     'h|help|?'   => \$help,
     'm|man'      => \$man,
-    'V|Verbose'  => \$verbose,
+    'D|Debug+'   => \$debug,
     'v|version'  => \$version,
     'c|count!'   => \$count,
     'p|prefix=s' => \$prefix
@@ -42,16 +43,13 @@ pod2usage(1) if $help;
 pod2usage( -verbose => 2 ) if $man;
 
 # Handle different options :
-if ($version) {
-    print "$PROGNAME ver. $VER_NUM\n";
-    exit;
-}
+version( $version, $PROGNAME, $VER_NUM );
 
 ## If no arguments were given, then allow STDIN to be used only
 ## if it's not connected to a terminal (otherwise print usage)
 pod2usage("$0: No files given.") if ( ( @ARGV == 0 ) && ( -t STDIN ) );
 
-verbose_init($verbose);
+debug_init($debug);
 
 # iTunes XML Library :
 my $library = '<stdin>';
@@ -64,10 +62,10 @@ if (@ARGV) {
 # Hashmap containing new directories at given depth (see prefix) :
 my %newloc;
 
-verbose_print("Verbose output set to true\n");
-verbose_print("Prefix set to : $prefix\n");
-verbose_print("MP3 count set to : $count\n");
-verbose_print("In Library file : $library\n");
+debug("Debug output set to $debug");
+debug("Prefix set to : $prefix");
+debug("MP3 count set to : $count");
+debug("In Library file : $library");
 
 my $nb_mp3 = 0;
 
@@ -102,10 +100,7 @@ while ( my $line = <> ) {
 }
 
 foreach my $path_final ( sort keys %newloc ) {
-    print "$path_final\n";
-
     my $finalpath = Path::Abstract->new( $prefix . "/" . $path_final );
-
     print "$finalpath\t: " . $newloc{$path_final} . " tracks\n";
 }
 
@@ -119,7 +114,7 @@ libraryPath - let you find every path in a iTunes Library
 
 =head1 SYNOPSIS
 
-libraryPath [-Vvhmc] iTuneLibrary.xml [-p /prefix]
+libraryPath [-Dvhmc] iTuneLibrary.xml [-p /prefix]
 
 =head1 OPTIONS
 
@@ -133,7 +128,7 @@ Print a brief help message and exits.
 
 Prints the manual page and exits.
 
-=item B<-V, --Verbose>
+=item B<-D, --Debug>
 
 Print more informations during execution.
 
