@@ -6,6 +6,8 @@ use Path::Abstract;
 use Local::Debug qw(debug_init debug debug_switch);
 use Local::Routines qw(version parse);
 
+use Data::Dumper;
+
 # Perl Threads :
 use threads;
 
@@ -25,7 +27,7 @@ use Mac::iTunes::Library::Item;
 
 my @progpath = split( /\//, $0 );
 my $PROGNAME = $progpath[-1];
-my $VER_NUM  = "0.2";
+my $VER_NUM  = "0.3";
 
 # Options :
 my $man                  = 0;
@@ -113,6 +115,65 @@ sub debug_lib_summary {
 
 debug_lib_summary( "Reference Library : $reference_file", $reference_lib );
 debug_lib_summary( "Candidate Library : $candidate_file", $candidate_lib );
+
+use JSON::XS;
+my $json = JSON::XS->new();
+
+# my %items = $reference_lib->items();
+# while (my ($artist, $artistSongs) = each %items) {
+#     while (my ($songName, $artistSongItems) = each %$artistSongs) {
+# 	foreach my $item (@$artistSongItems) {
+#               # Do something here to every item in the library
+#               print $json->allow_blessed->convert_blessed->encode ($song) . "\n"; #$song->name() . "\n";
+#           }
+#     }
+# }
+
+# Get the hash of items
+my %items = $reference_lib->items();
+
+print "{\n";
+my $number_id = 0;
+foreach my $artist ( sort keys %items ) {
+
+    #    print "$artist\n";
+
+    # $artistSongs is a hash-ref
+    my $artistSongs = $items{$artist};
+
+    # Dereference $artistSongs so that you can pass it to keys()
+    # $songName is a key in the $artistSongs hash-ref
+    foreach my $songName ( sort keys %$artistSongs ) {
+
+        # The songs are stored as an array, because there can
+        # be multiple songs with identical names
+        my $artistSongItems = $artistSongs->{$songName};
+
+#	print $json->allow_nonref->allow_blessed->convert_blessed->encode ("$songName:$artistSongItems");
+
+        # Go through all of the songs in the array-ref
+        foreach my $song (@$artistSongItems) {
+            print "\"$number_id\" : ";
+            $number_id++;
+            print $json->allow_nonref->allow_blessed->convert_blessed->encode(
+                $song);
+            print ",";
+
+            #            print Dumper ( $song);
+        }
+    }
+}
+
+print "\n}\n";
+
+# foreach my $item (%refifou) {
+#     foreach my $keyso (keys $refifou{item}) {
+# 	my $json = JSON->new();
+
+# 	#print $json->allow_blessed->allow_nonref->convert_blessed->encode( $refifou{$item} );
+
+# 	print Dumper ( $keyso );
+# }
 
 __END__
 

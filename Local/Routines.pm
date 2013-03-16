@@ -9,7 +9,8 @@ use Local::Debug qw(debug);
 use Mac::iTunes::Library::XML;
 
 use Exporter qw (import);
-our @EXPORT_OK = qw(version parse get_iso_date get_json_date get_rfc_date);
+our @EXPORT_OK =
+  qw(version parse library_summary get_iso_date get_json_date get_rfc_date);
 
 sub version {
     my $print   = shift;
@@ -28,6 +29,27 @@ sub parse {
     my $lib = Mac::iTunes::Library::XML->parse($file);
     debug( "Loaded " . $lib->num() . " tracks from library $file.", 2 );
     return $lib;
+}
+
+sub library_infos {
+    my $library = shift;
+    debug( "############ Library Infos ############\n", -1 );
+    print( $library->artists() );
+    debug( "############ End Infos ############\n", -1 );
+}
+
+sub library_summary {
+    my ( $title, $library ) = @_;
+    my %artists = $library->artist();
+    my %albums  = $library->albumArtist();
+    debug( "############ Library Summary ############\n", -1 );
+    print( "Number of artists: " . scalar( keys %artists ) . " artists.\n" );
+    print( "Number of albums: " . scalar( keys %albums ) . " albums.\n" );
+    print( "Number of tracks: " . $library->num() . " tracks.\n" );
+    print( "Version: " . $library->version() . "\n" );
+    print( "Total size of the library: " . $library->size() . "\n" );
+    print( "Total time of the library: " . $library->time() . "\n" );
+    debug( "############ End Summary ############\n", -1 );
 }
 
 sub get_iso_date {
