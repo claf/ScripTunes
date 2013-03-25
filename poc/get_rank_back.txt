@@ -1,0 +1,28 @@
+1. utiliser listRating.pl (voir options) pour faire le point sur la liste des
+notations dans une bibliothèque donnée.
+2. récupérera liste des nom de fichiers (avec ou sans le repertoire) qu'on
+souhaite renoter
+3. vérifier si on a des doublons dans cette liste
+4. utiliser stripLibrary.pl pour générer une plus petite lib ne contenant que
+les trackID et les locations qui se suivent.
+5. faire le point entre ce qui match, ce qui ne match pas, et ce qui est en
+double par rapport aux nouvelles locations dans la bibliothèque cible.
+6.
+
+
+la commande :
+./listRating.pl oldlib.xml -g 30 | ./matches2.pl > final_list2.xml
+permet de creer la liste des titre noté 1.5 étoiles et d'en faire une
+liste.xml. la bibliothèque strippée est hardcodée dans matches2.pl pour le
+moment.
+
+
+
+
+
+Final generation :
+for i in `seq 10 10 100`; do echo $i ; ./listRating.pl oldlib.xml -g $i |
+./matches2.pl -n $i > list_$i.xml; done
+
+notes : 
+- listRating.pl can be modified easily to find PlayCount for example.
